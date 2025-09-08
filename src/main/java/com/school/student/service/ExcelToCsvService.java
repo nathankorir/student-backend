@@ -13,7 +13,6 @@ import org.xml.sax.helpers.DefaultHandler;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,9 +43,8 @@ public class ExcelToCsvService {
         private final BufferedWriter writer;
         private final DataFormatter formatter = new DataFormatter();
 
-        private StringBuilder lastContents = new StringBuilder();
+        private final StringBuilder lastContents = new StringBuilder();
         private String currentCellRef;
-        private boolean isSSTIndex;
 
         private String[] currentRowValues;
         private int rowIndex = -1;
@@ -57,29 +55,14 @@ public class ExcelToCsvService {
             this.writer = writer;
         }
 
-//        @Override
-//        public void startElement(String uri, String localName, String name, Attributes attributes) {
-//            if ("c".equals(name)) {
-//                currentCellRef = attributes.getValue("r"); // e.g., A1
-//                String cellType = attributes.getValue("t");
-//                isSSTIndex = "s".equals(cellType);
-//                lastContents.setLength(0);
-//            } else if ("row".equals(name)) {
-//                rowIndex++;
-//                currentRowValues = new String[100]; // dynamic safety buffer (expandable)
-//            }
-//        }
-
         private String cellType;
-        private String cellStyle;
 
         @Override
         public void startElement(String uri, String localName, String name, Attributes attributes) {
             if ("c".equals(name)) {
                 currentCellRef = attributes.getValue("r");
-                cellType = attributes.getValue("t"); // type: s, inlineStr, str, n, etc.
-                cellStyle = attributes.getValue("s"); // style index (optional)
-                isSSTIndex = "s".equals(cellType);
+                cellType = attributes.getValue("t");
+                attributes.getValue("s");
                 lastContents.setLength(0);
             } else if ("row".equals(name)) {
                 rowIndex++;
@@ -95,22 +78,6 @@ public class ExcelToCsvService {
 
         @Override
         public void endElement(String uri, String localName, String name) {
-//            if ("v".equals(name)) {
-//                String value = lastContents.toString();
-//                if (isSSTIndex) {
-//                    int idx = Integer.parseInt(value);
-//                    value = sst.getItemAt(idx).getString();
-//                }
-//                int actualColIndex = getColumnIndex(currentCellRef);
-//                if (actualColIndex >= currentRowValues.length) {
-//                    // grow buffer dynamically
-//                    String[] bigger = new String[actualColIndex + 10];
-//                    System.arraycopy(currentRowValues, 0, bigger, 0, currentRowValues.length);
-//                    currentRowValues = bigger;
-//                }
-//                currentRowValues[actualColIndex] = value;
-//                maxColumns = Math.max(maxColumns, actualColIndex + 1);
-//            }
             if ("v".equals(name) || "t".equals(name)) {
                 String value = lastContents.toString();
 
@@ -118,7 +85,7 @@ public class ExcelToCsvService {
                     int idx = Integer.parseInt(value);
                     value = sst.getItemAt(idx).getString();
                 } else {
-                    value = value.trim(); // handles inlineStr, str, n, etc.
+                    value = value.trim();
                 }
 
                 int actualColIndex = getColumnIndex(currentCellRef);
@@ -127,7 +94,6 @@ public class ExcelToCsvService {
                     System.arraycopy(currentRowValues, 0, bigger, 0, currentRowValues.length);
                     currentRowValues = bigger;
                 }
-//                System.out.println("Row " + rowIndex + " Col " + actualColIndex + " = " + value);
                 currentRowValues[actualColIndex] = value;
                 maxColumns = Math.max(maxColumns, actualColIndex + 1);
             }
@@ -146,7 +112,7 @@ public class ExcelToCsvService {
                     String val = (i < currentRowValues.length && currentRowValues[i] != null)
                             ? currentRowValues[i] : "";
 
-                    // bump score (+10) in column 5 (F), skip header
+                    // add score (+10) in column 5
                     if (i == 5 && rowIndex > 0 && !val.isEmpty()) {
                         int score = (int) Math.round(Double.parseDouble(val));
                         val = String.valueOf(score + 10);

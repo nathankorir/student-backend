@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 @RestController
-@RequestMapping("/api/data")
+@RequestMapping("/api/students")
 public class StudentController {
     private final ExcelGeneratorService excelGeneratorService;
 
@@ -38,74 +38,11 @@ public class StudentController {
 
     private final StudentService studentService;
 
-    private final String dataDir = System.getProperty("os.name").toLowerCase().contains("win") ?
-            "C:\\var\\log\\applications\\API\\dataprocessing\\" :
-            "/var/log/applications/API/dataprocessing/";
-
     public StudentController(ExcelGeneratorService excelGeneratorService, ExcelToCsvService excelToCsvService, CsvUploadService csvUploadService, StudentService studentService) {
         this.excelGeneratorService = excelGeneratorService;
         this.excelToCsvService = excelToCsvService;
         this.csvUploadService = csvUploadService;
         this.studentService = studentService;
-    }
-
-//    @PostMapping("/generate")
-//    public ResponseEntity<String> generateExcel(@RequestParam long count) {
-//        try {
-//            excelGeneratorService.generateExcel(count);
-//            return ResponseEntity.ok("Excel generated");
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
-//        }
-//    }
-
-    @PostMapping("/generate")
-    public ResponseEntity<String> generateExcel(@RequestParam long count) {
-        try {
-            // Generate and save Excel on backend
-            String filePath = excelGeneratorService.generateExcel(count); // return full path
-
-            // Return path or filename to frontend
-            return ResponseEntity.ok("Excel file generated and saved to: " + filePath);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
-        }
-    }
-
-
-//    @PostMapping("/convert")
-//    public ResponseEntity<String> convertExcelToCsv(@RequestParam String excelPath, @RequestParam String csvPath) {
-//        try {
-//            excelToCsvService.convertExcelToCsv(excelPath, csvPath);
-//            return ResponseEntity.ok("CSV generated");
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
-//        }
-//    }
-
-    @PostMapping("/convert")
-    public ResponseEntity<String> convertExcelToCsv(
-            @RequestParam String excelName,
-            @RequestParam String csvName) {
-        try {
-            excelToCsvService.convertExcelToCsv(excelName, csvName); // reads Excel from server, writes CSV to server
-            return ResponseEntity.ok("CSV file generated and saved as: " + csvName);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
-        }
-    }
-
-
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadCsv(@RequestParam String csvName) {
-        try {
-            csvUploadService.uploadCsvToDb(csvName);
-            return ResponseEntity.ok("Data uploaded to DB");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
-        }
     }
 
     @GetMapping("/{studentId}")
@@ -121,57 +58,13 @@ public class StudentController {
         return ResponseEntity.ok(students);
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<Page<Student>> getAllStudentsByClass(Pageable pageable) {
         Page<Student> students = studentService.getAllStudentsByClass(pageable);
         return ResponseEntity.ok(students);
     }
 
-    @GetMapping("/files")
-    public ResponseEntity<List<String>> listFiles(@RequestParam(defaultValue = "excel") String type) {
-        try {
-            File folder = new File(dataDir);
-            if (!folder.exists()) folder.mkdirs();
-
-            String[] files = folder.list((dir, name) -> {
-                if ("excel".equalsIgnoreCase(type)) return name.endsWith(".xlsx");
-                else if ("csv".equalsIgnoreCase(type)) return name.endsWith(".csv");
-                return false;
-            });
-
-            return ResponseEntity.ok(files != null ? Arrays.asList(files) : Collections.emptyList());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
-        }
-    }
-
-    @GetMapping("/students/export/csv")
-    public ResponseEntity<Resource> exportCsv(
-            @RequestParam(required = false) String className,
-            @RequestParam(required = false) Long studentId) throws IOException {
-
-        Path csvFile = studentService.exportCsv(className, studentId);
-        Resource resource = new FileSystemResource(csvFile);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=students.csv")
-                .body(resource);
-    }
-
-    @GetMapping("/students/export/excel")
-    public ResponseEntity<Resource> exportExcel(
-            @RequestParam(required = false) String className,
-            @RequestParam(required = false) Long studentId) throws IOException {
-
-        Path excelFile = studentService.exportExcel(className, studentId);
-        Resource resource = new FileSystemResource(excelFile);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=students.xlsx")
-                .body(resource);
-    }
-
-    @GetMapping("/students/{studentId}/export/pdf")
+    @GetMapping("/{studentId}/export/pdf")
     public ResponseEntity<byte[]> exportStudentPdf(@PathVariable Long studentId) throws Exception {
         byte[] pdfBytes = studentService.generateStudentPdf(studentId);
 
@@ -180,5 +73,4 @@ public class StudentController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
     }
-
 }

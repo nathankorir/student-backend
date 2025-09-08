@@ -6,7 +6,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -20,19 +19,17 @@ import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 
 @Service
 public class StudentService {
-    private StudentRepository studentRepository;
+    private final StudentRepository studentRepository;
     private final JdbcTemplate jdbcTemplate;
 
     public StudentService(StudentRepository studentRepository, JdbcTemplate jdbcTemplate) {
@@ -139,7 +136,7 @@ public class StudentService {
                     row.createCell(4).setCellValue(rs.getString("class_name"));
                     row.createCell(5).setCellValue(rs.getInt("score"));
                 }
-                return null; // ResultSetExtractor requires a return value
+                return null;
             });
 
             workbook.write(fos);
@@ -149,7 +146,7 @@ public class StudentService {
         return tempFile;
     }
 
-    public byte[] generateStudentPdf(Long studentId) throws Exception {
+    public byte[] generateStudentPdf(Long studentId) {
         Student student = studentRepository.findById(studentId).orElseThrow(() -> new NoSuchElementException("Student not found"));
         Document document = new Document(PageSize.A4);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -191,5 +188,4 @@ public class StudentService {
         table.addCell(cell1);
         table.addCell(cell2);
     }
-
 }

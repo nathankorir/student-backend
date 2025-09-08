@@ -2,10 +2,7 @@ package com.school.student.service;
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.FileOutputStream;
@@ -20,9 +17,6 @@ import java.util.Random;
 public class ExcelGeneratorService {
     private static final String[] CLASSES = {"Class1", "Class2", "Class3", "Class4", "Class5"};
     private static final Random RANDOM = new Random();
-
-//    @Value("${app.output-dir}")
-//    private String dir;
 
     public String generateExcel(long count) throws IOException {
         String dir = System.getProperty("os.name").toLowerCase().contains("win") ?
@@ -58,7 +52,7 @@ public class ExcelGeneratorService {
             workbook.write(fos);
             workbook.dispose();
         }
-        return filePath.toString();
+        return fileName;
     }
 
     private String randomString(int min, int max) {

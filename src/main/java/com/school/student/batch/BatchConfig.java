@@ -1,7 +1,6 @@
 package com.school.student.batch;
 
 import com.school.student.model.Student;
-import com.school.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -31,9 +30,7 @@ import java.time.LocalDate;
 public class BatchConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final StudentRepository studentRepository;
     private final DataSource dataSource;
-
 
     @Bean
     @StepScope
@@ -44,13 +41,12 @@ public class BatchConfig {
         reader.setLineMapper((line, lineNumber) -> {
             String[] f = line.split(",");
             return Student.builder()
-//                    .studentId(Long.valueOf(f[0]))
                     .studentId((long) Double.parseDouble(f[0]))
                     .firstName(f[1])
                     .lastName(f[2])
                     .dob(LocalDate.parse(f[3]))
                     .className(f[4])
-                    .score(Integer.parseInt(f[5]) + 5) // bump +5
+                    .score(Integer.parseInt(f[5]) + 5) // add +5
                     .build();
         });
         return reader;
@@ -61,12 +57,6 @@ public class BatchConfig {
     public ItemProcessor<Student, Student> processor() {
         return student -> student; // already processed (+5)
     }
-
-
-//    @Bean
-//    public ItemWriter<Student> writer() {
-//        return items -> studentRepository.saveAll(items);
-//    }
 
     @Bean
     public JdbcBatchItemWriter<Student> writer() {
@@ -97,11 +87,9 @@ public class BatchConfig {
                 .writer(writer)
                 .faultTolerant()
                 .skip(NumberFormatException.class)
-                .skipLimit(100) // skip up to 100 bad records
+                .skipLimit(100)
                 .build();
     }
-
-
 
     @Bean
     public Job studentJob(Step studentStep) {
